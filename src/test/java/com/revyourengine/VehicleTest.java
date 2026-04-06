@@ -2,7 +2,9 @@ package com.revyourengine;
 
 import com.revyourengine.utils.CollisionLogger;
 import com.revyourengine.vehicle.Car;
+import com.revyourengine.vehicle.Helicopter;
 import com.revyourengine.vehicle.Plane;
+import com.revyourengine.vehicle.Truck;
 import com.revyourengine.vehicle.Vehicle;
 import org.joml.Vector3f;
 import org.junit.jupiter.api.BeforeEach;
@@ -212,8 +214,8 @@ class VehicleTest {
     void scene_collisionTestCreatesFourVehicles() {
         Scene scene = new Scene(new CollisionLogger());
         List<Vehicle> testVehicles = scene.startCollisionTest();
-        assertEquals(4, testVehicles.size());
-        assertEquals(4, scene.getVehicles().size());
+        assertEquals(6, testVehicles.size());
+        assertEquals(6, scene.getVehicles().size());
     }
 
     @Test
@@ -246,5 +248,168 @@ class VehicleTest {
         scene.update(DT);
         // There should be at least one collision entry
         assertTrue(log.getEntries().stream().anyMatch(e -> e.contains("COLLISION")));
+    }
+
+    // ---- GOD MODE ----------------------------------------------------------
+
+    @Test
+    void vehicle_startsWithFullHealth() {
+        Car car = new Car("TestCar");
+        assertEquals(car.getMaxHealth(), car.getHealth(), 1e-4f);
+    }
+
+    @Test
+    void vehicle_takeDamageReducesHealth() {
+        Car car = new Car("TestCar");
+        float before = car.getHealth();
+        car.takeDamage(20f);
+        assertEquals(before - 20f, car.getHealth(), 1e-4f);
+    }
+
+    @Test
+    void vehicle_healthDoesNotGoBelowZero() {
+        Car car = new Car("TestCar");
+        car.takeDamage(999f);
+        assertEquals(0f, car.getHealth(), 1e-4f);
+        assertTrue(car.isDestroyed());
+    }
+
+    @Test
+    void vehicle_godModeRestoresHealth() {
+        Car car = new Car("TestCar");
+        car.takeDamage(50f);
+        car.toggleGodMode();
+        assertEquals(car.getMaxHealth(), car.getHealth(), 1e-4f);
+    }
+
+    @Test
+    void vehicle_godModeNoDamage() {
+        Car a = new Car("A");
+        Car b = new Car("B");
+        a.setVelocity(3, 0, 0);
+        b.setVelocity(-3, 0, 0);
+        a.toggleGodMode();
+        float healthBefore = a.getHealth();
+        a.collide(b);
+        assertEquals(healthBefore, a.getHealth(), 1e-4f);
+    }
+
+    @Test
+    void vehicle_godModeSpeedCapIncreases() {
+        Car car = new Car("TestCar");
+        car.toggleGodMode();
+        for (int i = 0; i < 200; i++) car.faster();
+        assertTrue(car.getSpeed() > 8.0f);
+        assertTrue(car.getSpeed() <= 20.0f);
+    }
+
+    // ---- Truck -------------------------------------------------------------
+
+    @Test
+    void truck_isSubtypeOfVehicle() {
+        Truck truck = new Truck("TestTruck");
+        assertInstanceOf(Vehicle.class, truck);
+    }
+
+    @Test
+    void truck_hasMassGreaterThanCar() {
+        Truck truck = new Truck("TestTruck");
+        Car   car   = new Car("TestCar");
+        assertTrue(truck.getMass() > car.getMass());
+    }
+
+    @Test
+    void truck_hasHigherMaxHealthThanCar() {
+        Truck truck = new Truck("TestTruck");
+        Car   car   = new Car("TestCar");
+        assertTrue(truck.getMaxHealth() > car.getMaxHealth());
+    }
+
+    @Test
+    void truck_speedCapIsLowerThanCar() {
+        Truck truck = new Truck("TestTruck");
+        Car   car   = new Car("TestCar");
+        for (int i = 0; i < 100; i++) { truck.faster(); car.faster(); }
+        assertTrue(truck.getSpeed() < car.getSpeed());
+    }
+
+    // ---- Helicopter --------------------------------------------------------
+
+    @Test
+    void helicopter_isSubtypeOfVehicle() {
+        Helicopter heli = new Helicopter("TestHeli");
+        assertInstanceOf(Vehicle.class, heli);
+    }
+
+    @Test
+    void helicopter_canMoveVertically() {
+        Helicopter heli = new Helicopter("TestHeli");
+        heli.setPosition(0, 4, 0);
+        heli.setSpeed(3.0f);
+        heli.moveUp();
+        float yBefore = heli.getPosition().y;
+        heli.update(DT);
+        assertTrue(heli.getPosition().y > yBefore);
+    }
+
+    // ---- Scene – new types ------------------------------------------------
+
+    @Test
+    void scene_addTruckIncreasesVehicleCount() {
+        Scene scene = new Scene(new CollisionLogger());
+        scene.addTruck("Truck1");
+        assertEquals(1, scene.getVehicles().size());
+    }
+
+    @Test
+    void scene_addHelicopterIncreasesVehicleCount() {
+        Scene scene = new Scene(new CollisionLogger());
+        scene.addHelicopter("Heli1");
+        assertEquals(1, scene.getVehicles().size());
+    }
+
+    @Test
+    void scene_selectVehicle_updatesSelection() {
+        Scene scene = new Scene(new CollisionLogger());
+        scene.addCar("Car1");
+        Vehicle plane = scene.addPlane("Plane1");
+        assertSame(plane, scene.getSelectedVehicle());
+    }
+
+    @Test
+    void scene_removeDestroyed_removesDeadVehicles() {
+        Scene scene = new Scene(new CollisionLogger());
+        Car car = scene.addCar("DeadCar");
+        car.takeDamage(car.getMaxHealth()); // kill it
+        scene.removeDestroyed();
+        assertEquals(0, scene.getVehicles().size());
+    }
+
+    // ---- Momentum collision -----------------------------------------------
+
+    @Test
+    void collision_equalMassSwapsVelocities() {
+        Car a = new Car("A");
+        Car b = new Car("B");
+        a.setVelocity(3, 0, 0);
+        b.setVelocity(-3, 0, 0);
+        a.collide(b);
+        // Equal mass: velocities fully swap
+        assertEquals(-3, a.getVelocity().x, 0.1f);
+        assertEquals( 3, b.getVelocity().x, 0.1f);
+    }
+
+    @Test
+    void collision_heavierVehicleChangesLessVelocity() {
+        Truck truck = new Truck("Heavy");
+        Car   car   = new Car("Light");
+        truck.setVelocity(2, 0, 0);
+        car.setVelocity(-2, 0, 0);
+        float truckVxBefore = truck.getVelocity().x;
+        truck.collide(car);
+        // Truck's speed should change less than car's speed
+        float truckDelta = Math.abs(truck.getVelocity().x - truckVxBefore);
+        float carDelta   = Math.abs(car.getVelocity().x - (-2f));
+        assertTrue(truckDelta < carDelta);
     }
 }

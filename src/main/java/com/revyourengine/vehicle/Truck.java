@@ -4,35 +4,39 @@ import com.revyourengine.Mesh;
 import org.joml.Vector3f;
 
 /**
- * A Car is a lightweight ground vehicle (XZ only, cannot fly).
- * Mass: 1.0  |  Max health: 100  |  Speed cap: 8
+ * A Truck is a heavy ground vehicle: high mass, high health, lower top speed.
+ * It ploughs through lighter vehicles and deals heavy collision damage.
+ * Mass: 3.0  |  Max health: 200  |  Speed cap: 5
  */
-public class Car extends Vehicle {
+public class Truck extends Vehicle {
 
-    /** Car body half-extents for rendering and collision. */
-    public static final float CAR_HW = 0.75f;
-    public static final float CAR_HH = 0.25f;
-    public static final float CAR_HD = 0.40f;
+    public static final float TRUCK_HW = 1.0f;
+    public static final float TRUCK_HH = 0.45f;
+    public static final float TRUCK_HD = 0.65f;
 
-    public Car(String name) {
-        super(name, 0.0f, 1.0f, 100f);
-        this.halfWidth  = CAR_HW;
-        this.halfHeight = CAR_HH;
-        this.halfDepth  = CAR_HD;
-        setPosition(0, GROUND_Y, 0);
+    public Truck(String name) {
+        super(name, 0.0f, 3.0f, 200f);
+        this.halfWidth  = TRUCK_HW;
+        this.halfHeight = TRUCK_HH;
+        this.halfDepth  = TRUCK_HD;
+        this.acceleration = 0.3f;
+        setPosition(0, GROUND_Y + TRUCK_HH - 0.25f, 0);
     }
 
-    /** Allocates and returns a red box mesh suitable for a car. */
+    /** Orange box mesh. */
     public static Mesh createMesh() {
-        return Mesh.createBox(CAR_HW, CAR_HH, CAR_HD, 0.85f, 0.15f, 0.15f);
+        return Mesh.createBox(TRUCK_HW, TRUCK_HH, TRUCK_HD, 0.90f, 0.50f, 0.10f);
     }
+
+    @Override
+    protected float maxSpeedCap() { return 5.0f; }
 
     // ---- direction controls -----------------------------------------------
 
     @Override public void moveLeft()  { velocity.x = -speed; velocity.z = 0; }
     @Override public void moveRight() { velocity.x =  speed; velocity.z = 0; }
-    @Override public void moveUp()    { /* Cars cannot fly */ }
-    @Override public void moveDown()  { /* Already on the ground */ }
+    @Override public void moveUp()    { /* ground only */ }
+    @Override public void moveDown()  { /* already at ground */ }
 
     public void moveForward()  { velocity.z =  speed; velocity.x = 0; }
     public void moveBackward() { velocity.z = -speed; velocity.x = 0; }
@@ -44,7 +48,7 @@ public class Car extends Vehicle {
         Vector3f pos = getPosition();
         pos.x += velocity.x * dt;
         pos.z += velocity.z * dt;
-        pos.y  = GROUND_Y;
+        pos.y  = GROUND_Y + TRUCK_HH - 0.25f;
         setPosition(pos.x, pos.y, pos.z);
         bounceOffBorders();
         if (flashTimer > 0f) flashTimer = Math.max(0f, flashTimer - dt);
@@ -61,6 +65,7 @@ public class Car extends Vehicle {
         if (pos.z >  limitZ) { pos.z =  limitZ; velocity.z = -Math.abs(velocity.z); }
         if (pos.z < -limitZ) { pos.z = -limitZ; velocity.z =  Math.abs(velocity.z); }
 
-        setPosition(pos.x, GROUND_Y, pos.z);
+        float groundLevel = GROUND_Y + TRUCK_HH - 0.25f;
+        setPosition(pos.x, groundLevel, pos.z);
     }
 }
