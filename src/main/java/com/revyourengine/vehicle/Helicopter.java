@@ -4,27 +4,30 @@ import com.revyourengine.Mesh;
 import org.joml.Vector3f;
 
 /**
- * A Plane is a light aircraft that moves freely in 3D space.
- * Mass: 0.8  |  Max health: 80  |  Speed cap: 8
+ * A Helicopter is an agile 3-D aircraft that hovers in place when no input is applied.
+ * Lighter than a Plane, it is very maneuverable but fragile.
+ * Mass: 0.6  |  Max health: 60  |  Speed cap: 8
  */
-public class Plane extends Vehicle {
+public class Helicopter extends Vehicle {
 
-    /** Plane body half-extents for rendering and collision. */
-    public static final float PLANE_HW = 0.60f;
-    public static final float PLANE_HH = 0.15f;
-    public static final float PLANE_HD = 0.70f;
+    public static final float HELI_HW = 0.55f;
+    public static final float HELI_HH = 0.30f;
+    public static final float HELI_HD = 0.55f;
 
-    public Plane(String name) {
-        super(name, 0.0f, 0.8f, 80f);
-        this.halfWidth  = PLANE_HW;
-        this.halfHeight = PLANE_HH;
-        this.halfDepth  = PLANE_HD;
-        setPosition(0, WORLD_MAX_Y / 2.0f, 0);
+    /** Vertical damping: if no Y input the helicopter slowly levels off. */
+    private static final float HOVER_DAMP = 3.0f;
+
+    public Helicopter(String name) {
+        super(name, 0.0f, 0.6f, 60f);
+        this.halfWidth  = HELI_HW;
+        this.halfHeight = HELI_HH;
+        this.halfDepth  = HELI_HD;
+        setPosition(0, WORLD_MAX_Y * 0.4f, 0);
     }
 
-    /** Allocates and returns a blue box mesh suitable for a plane. */
+    /** Green/teal box mesh. */
     public static Mesh createMesh() {
-        return Mesh.createBox(PLANE_HW, PLANE_HH, PLANE_HD, 0.15f, 0.40f, 0.85f);
+        return Mesh.createBox(HELI_HW, HELI_HH, HELI_HD, 0.10f, 0.70f, 0.45f);
     }
 
     // ---- direction controls -----------------------------------------------
@@ -41,6 +44,9 @@ public class Plane extends Vehicle {
 
     @Override
     public void update(float dt) {
+        // Dampen vertical velocity toward hover when no vertical input is applied
+        velocity.y -= velocity.y * HOVER_DAMP * dt;
+
         Vector3f pos = getPosition();
         pos.x += velocity.x * dt;
         pos.y += velocity.y * dt;
