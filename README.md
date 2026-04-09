@@ -63,6 +63,9 @@ mvn clean package
 
 # Launch (Linux / macOS – needs a display)
 java -jar target/rev-your-engine.jar
+
+# Launch (Windows)
+java -jar target\rev-your-engine.jar
 ```
 
 ---
