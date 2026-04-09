@@ -4,8 +4,9 @@ import com.revyourengine.Mesh;
 import org.joml.Vector3f;
 
 /**
- * A Car is a lightweight ground vehicle (XZ only, cannot fly).
- * Mass: 1.0  |  Max health: 100  |  Speed cap: 8
+ * A Car is a Vehicle that moves only on the ground plane (XZ).
+ * It bounces off the world borders on X and Z, and cannot fly.
+ * Attempting to move it upward has no effect.
  */
 public class Car extends Vehicle {
 
@@ -15,10 +16,11 @@ public class Car extends Vehicle {
     public static final float CAR_HD = 0.40f;
 
     public Car(String name) {
-        super(name, 0.0f, 1.0f, 100f);
+        super(name, 0.0f);
         this.halfWidth  = CAR_HW;
         this.halfHeight = CAR_HH;
         this.halfDepth  = CAR_HD;
+        // Cars live at ground level
         setPosition(0, GROUND_Y, 0);
     }
 
@@ -29,13 +31,39 @@ public class Car extends Vehicle {
 
     // ---- direction controls -----------------------------------------------
 
-    @Override public void moveLeft()  { velocity.x = -speed; velocity.z = 0; }
-    @Override public void moveRight() { velocity.x =  speed; velocity.z = 0; }
-    @Override public void moveUp()    { /* Cars cannot fly */ }
-    @Override public void moveDown()  { /* Already on the ground */ }
+    @Override
+    public void moveLeft() {
+        velocity.x = -speed;
+        velocity.z = 0;
+    }
 
-    public void moveForward()  { velocity.z =  speed; velocity.x = 0; }
-    public void moveBackward() { velocity.z = -speed; velocity.x = 0; }
+    @Override
+    public void moveRight() {
+        velocity.x = speed;
+        velocity.z = 0;
+    }
+
+    @Override
+    public void moveUp() {
+        // Cars cannot go up – they stay on the ground (no-op / bounce)
+    }
+
+    @Override
+    public void moveDown() {
+        // Already on the ground – no-op
+    }
+
+    /** Move in the +Z direction (away from the camera). */
+    public void moveForward() {
+        velocity.z = speed;
+        velocity.x = 0;
+    }
+
+    /** Move in the -Z direction (toward the camera). */
+    public void moveBackward() {
+        velocity.z = -speed;
+        velocity.x = 0;
+    }
 
     // ---- update -----------------------------------------------------------
 
@@ -44,10 +72,10 @@ public class Car extends Vehicle {
         Vector3f pos = getPosition();
         pos.x += velocity.x * dt;
         pos.z += velocity.z * dt;
-        pos.y  = GROUND_Y;
+        // Cars always stay at ground level
+        pos.y = GROUND_Y;
         setPosition(pos.x, pos.y, pos.z);
         bounceOffBorders();
-        if (flashTimer > 0f) flashTimer = Math.max(0f, flashTimer - dt);
     }
 
     @Override

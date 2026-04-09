@@ -90,10 +90,6 @@ public class ShaderProgram {
         GL20.glUniform1i(uniforms.get(uniformName), value);
     }
 
-    public void setUniform(String uniformName, float value) {
-        GL20.glUniform1f(uniforms.get(uniformName), value);
-    }
-
     public void bind() {
         GL20.glUseProgram(programId);
     }
