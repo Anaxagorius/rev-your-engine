@@ -4,8 +4,8 @@ import com.revyourengine.Mesh;
 import org.joml.Vector3f;
 
 /**
- * A Plane is a light aircraft that moves freely in 3D space.
- * Mass: 0.8  |  Max health: 80  |  Speed cap: 8
+ * A Plane (aircraft) is a Vehicle that can move freely in 3D space (X, Y, Z).
+ * It bounces off all six world borders including top and bottom.
  */
 public class Plane extends Vehicle {
 
@@ -15,27 +15,50 @@ public class Plane extends Vehicle {
     public static final float PLANE_HD = 0.70f;
 
     public Plane(String name) {
-        super(name, 0.0f, 0.8f, 80f);
+        super(name, 0.0f); // no gravity for aircraft
         this.halfWidth  = PLANE_HW;
         this.halfHeight = PLANE_HH;
         this.halfDepth  = PLANE_HD;
+        // Start at mid-height
         setPosition(0, WORLD_MAX_Y / 2.0f, 0);
     }
 
-    /** Allocates and returns a blue box mesh suitable for a plane. */
+    /** Allocates and returns a blue-ish box mesh suitable for a plane. */
     public static Mesh createMesh() {
         return Mesh.createBox(PLANE_HW, PLANE_HH, PLANE_HD, 0.15f, 0.40f, 0.85f);
     }
 
     // ---- direction controls -----------------------------------------------
 
-    @Override public void moveLeft()  { velocity.x = -speed; }
-    @Override public void moveRight() { velocity.x =  speed; }
-    @Override public void moveUp()    { velocity.y =  speed; }
-    @Override public void moveDown()  { velocity.y = -speed; }
+    @Override
+    public void moveLeft() {
+        velocity.x = -speed;
+    }
 
-    public void moveForward()  { velocity.z =  speed; }
-    public void moveBackward() { velocity.z = -speed; }
+    @Override
+    public void moveRight() {
+        velocity.x = speed;
+    }
+
+    @Override
+    public void moveUp() {
+        velocity.y = speed;
+    }
+
+    @Override
+    public void moveDown() {
+        velocity.y = -speed;
+    }
+
+    /** Move in the +Z direction. */
+    public void moveForward() {
+        velocity.z = speed;
+    }
+
+    /** Move in the -Z direction. */
+    public void moveBackward() {
+        velocity.z = -speed;
+    }
 
     // ---- update -----------------------------------------------------------
 
@@ -47,7 +70,6 @@ public class Plane extends Vehicle {
         pos.z += velocity.z * dt;
         setPosition(pos.x, pos.y, pos.z);
         bounceOffBorders();
-        if (flashTimer > 0f) flashTimer = Math.max(0f, flashTimer - dt);
     }
 
     @Override
